@@ -1,8 +1,7 @@
 {
 	"info": {
+		"_postman_id": "b8ad055b-9b7b-46b6-b65e-405e55ed1286",
 		"name": "CoffeeDrop",
-		"_postman_id": "df15e329-169f-df36-623d-78cd2cdc1350",
-		"description": "",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
@@ -11,9 +10,26 @@
 			"request": {
 				"method": "GET",
 				"header": [],
-				"body": {},
 				"url": {
-					"raw": ""
+					"raw": "http://127.0.0.1:8000/api/getnearestlocation?postcode=LE1 6HH",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"getnearestlocation"
+					],
+					"query": [
+						{
+							"key": "postcode",
+							"value": "LE1 6HH"
+						}
+					]
 				},
 				"description": "Returns the address and opening times of the nearest CoffeeDrop location"
 			},
@@ -35,8 +51,7 @@
 				},
 				"url": {
 					"raw": ""
-				},
-				"description": ""
+				}
 			},
 			"response": []
 		},
@@ -55,9 +70,101 @@
 					"raw": "{\n      \"Ristretto\": 10,\n      \"Espresso\": 100,\n      \"Lungo\":30\n}\n\n"
 				},
 				"url": {
-					"raw": ""
-				},
-				"description": ""
+					"raw": "http://127.0.0.1:8000/api/calculatecashback?password=bob&email=bob@bob.com",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"calculatecashback"
+					],
+					"query": [
+						{
+							"key": "password",
+							"value": "bob"
+						},
+						{
+							"key": "email",
+							"value": "bob@bob.com"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "GetLastFiveReciepts",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "http://127.0.0.1:8000/api/getlastfivereciepts?email=bob@bob.com&password=bob&userEmail=bob@bob.com",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"getlastfivereciepts"
+					],
+					"query": [
+						{
+							"key": "email",
+							"value": "bob@bob.com"
+						},
+						{
+							"key": "password",
+							"value": "bob"
+						},
+						{
+							"key": "userEmail",
+							"value": "bob@bob.com"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "ValidatePostcode",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://127.0.0.1:8000/api/validatepostcode?postcode=LE1 6HH",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"validatepostcode"
+					],
+					"query": [
+						{
+							"key": "postcode",
+							"value": "LE1 6HH"
+						}
+					]
+				}
 			},
 			"response": []
 		}

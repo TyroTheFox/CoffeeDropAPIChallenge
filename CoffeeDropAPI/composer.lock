@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "69536a22b9721a005bfbd2e2d1f2a8f5",
+    "content-hash": "03a550c529b1a21531549ed2d911e3c7",
     "packages": [
         {
             "name": "defuse/php-encryption",
@@ -668,6 +668,50 @@
                 "url"
             ],
             "time": "2018-12-04T20:46:45+00:00"
+        },
+        {
+            "name": "jabranr/postcodes-io",
+            "version": "1.0.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/jabranr/postcodes-io.git",
+                "reference": "035fc82f83b9182ca829c79d76ab9624c2b52847"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/jabranr/postcodes-io/zipball/035fc82f83b9182ca829c79d76ab9624c2b52847",
+                "reference": "035fc82f83b9182ca829c79d76ab9624c2b52847",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">= 5.3.0"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "~4.8"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Jabranr\\PostcodesIO\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT License"
+            ],
+            "authors": [
+                {
+                    "name": "Jabran Rafique",
+                    "email": "hello@jabran.me"
+                }
+            ],
+            "description": "PHP library for postcodes.io API",
+            "keywords": [
+                "address",
+                "postcode",
+                "uk"
+            ],
+            "time": "2017-02-14T23:42:48+00:00"
         },
         {
             "name": "jakub-onderka/php-console-color",

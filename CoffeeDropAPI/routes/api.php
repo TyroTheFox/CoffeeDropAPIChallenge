@@ -24,4 +24,8 @@ Route::group(['middleware' => 'auth:api'], function(){
 Route::post('details', 'API\UserController@details');
 });
 
-Route::get('ValidatePostcode', 'API\PodRecyclingLocationController@ValidatePostcode');
+Route::get('validatepostcode', 'API\PodRecyclingLocationController@ValidatePostcode');
+Route::get('getnearestlocation', 'API\PodRecyclingLocationController@GetNearestLocation');
+Route::post('createnewlocation', 'API\PodRecyclingLocationController@CreateNewLocation');
+Route::post('calculatecashback', 'API\PodRecyclingLocationController@CalculateCashback');
+Route::get('getlastfivereciepts', 'API\PodRecyclingLocationController@GetLastFiveReciepts');
