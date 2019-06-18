@@ -1,13 +1,16 @@
 <?php
 namespace App\Http\Controllers\API;
 
-use Illuminate\Http\Request; 
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use GuzzleHttp\Client;
 use App\Http\Controllers\Controller; 
 use Illuminate\Support\Facades\Validator;
-use App\User; 
+use App\User;
+use App\Location;
+use App\Receipt;
+use App\ReceiptItem;
 use Illuminate\Support\Facades\Auth; 
 
 class PodRecyclingLocationController extends Controller 
@@ -64,9 +67,13 @@ class PodRecyclingLocationController extends Controller
 		//Check postcode is valid
 		if($this->CheckPostcode($request)){
 			//Attempt to opt out early and search DB for exactMatches
-			$exactMatches = DB::select('select * from tbl_name where postcode = ?', [$request->postcode]);
-			if(count($exactMatches) >= 0){
+            $exactMatches = Location::where('postcode', $request->postcode)->get();
+			//$exactMatches = DB::select('select * from tbl_name where postcode = ?', []);
+			if(count($exactMatches) > 0){
 				//Request Postcode is a DB Location, return that info
+                $openingHours = $this->BuildLocationTimesResponse($exactMatches[0]);
+                $address = $this->BuildLocationAddressResponce($exactMatches[0]->postcode);
+                return response()->json(['address' => $address, 'openingHours' => $openingHours], $this->successStatus);
 			};
 			
 			//If not exact location, narrow down possibilities
@@ -76,9 +83,9 @@ class PodRecyclingLocationController extends Controller
 			//Get outcode for postcode
 			if(preg_match('/^([A-Z]\d{1,2}|[A-Z]{2}\d(\d|[A-Z])?)( \d[A-Z]{2})?$/mi', $request->postcode, $outcode)){	
 				//Find matches with similar outcode
-				$matches = DB::select('select * from tbl_name where postcode like ?', [$outcode[1].'%']);
+                $matches = Location::where('postcode', 'like', $outcode[1].'%')->get();
+				//$matches = DB::select('select * from tbl_name where postcode like ?', [$outcode[1].'%']);
 				//Find closest match
-				$shortestDistance = 0.0;
 				if(count($matches) > 0){
 					//Find postcode with shortest distance to request postcode
 					$shortestMatch = $this->FindShortestDistanceToRequestPostcode($requestPoint, $matches);
@@ -89,7 +96,8 @@ class PodRecyclingLocationController extends Controller
 					return response()->json(['address' => $address, 'openingHours' => $openingHours], $this->successStatus);
 				}else{
 					//Attempt to find closest Postcode to Request Postcode
-					$DBPostcodes = DB::select('select * from tbl_name');
+                    $DBPostcodes = Location::all();
+					//$DBPostcodes = DB::select('select * from tbl_name');
 					$shortestPostcode = $this->FindShortestDistanceToRequestPostcode($requestPoint, $DBPostcodes);
 					//Return shortest match's information to the user
 					$openingHours = $this->BuildLocationTimesResponse($shortestPostcode);
@@ -124,31 +132,27 @@ class PodRecyclingLocationController extends Controller
 				]);
 				if(!$this->CheckPostcode($request)){ return response()->json(['error'=>'Postcode Invalid'], 200); }
 				if(!DB::connection()->getDatabaseName()){ return response()->json(['error'=>'Database Not Found'], 200); }
-				$result = DB::select('select * from tbl_name where postcode = :postcode', ['postcode' => $content->postcode]);
-				if(count($result) > 0){return response()->json(['error'=>'Postcode Already Exists'], 200);}
+				$result = Location::where('postcode', $content->postcode)->count();
+				//$result = DB::select('select * from tbl_name where postcode = :postcode', ['postcode' => $content->postcode]);
+				if($result > 0){return response()->json(['error'=>'Postcode Already Exists'], 200);}
 				//Create the database statement
-				DB::insert('insert into tbl_name (
-							postcode, 
-							open_Monday, open_Tuesday, open_Wednesday, open_Thursday, open_Friday, open_Saturday, open_Sunday, 
-							closed_Monday, closed_Tuesday, closed_Wednesday, closed_Thursday, closed_Friday, closed_Saturday, closed_Sunday) 
-							values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', 
-							[
-								$content->postcode, 
-								(!empty($content->opening_times->monday		) ? $content->opening_times->monday		: ""),
-								(!empty($content->opening_times->tuesday	) ? $content->opening_times->tuesday	: ""),
-								(!empty($content->opening_times->wednesday	) ? $content->opening_times->wednesday	: ""),
-								(!empty($content->opening_times->thursday	) ? $content->opening_times->thursday	: ""),
-								(!empty($content->opening_times->friday		) ? $content->opening_times->friday		: ""),
-								(!empty($content->opening_times->saturday	) ? $content->opening_times->saturday	: ""),
-								(!empty($content->opening_times->sunday		) ? $content->opening_times->sunday		: ""),
-								(!empty($content->closing_times->monday		) ? $content->closing_times->monday		: ""),
-								(!empty($content->closing_times->tuesday	) ? $content->closing_times->tuesday	: ""),
-								(!empty($content->closing_times->wednesday	) ? $content->closing_times->wednesday	: ""),
-								(!empty($content->closing_times->thursday	) ? $content->closing_times->thursday	: ""),
-								(!empty($content->closing_times->friday		) ? $content->closing_times->friday		: ""),
-								(!empty($content->closing_times->saturday	) ? $content->closing_times->saturday	: ""),
-								(!empty($content->closing_times->sunday		) ? $content->closing_times->sunday		: "")
-							]);
+                $location = Location::create([
+                    'postcode' => $content->postcode,
+                    'open_Monday' =>(!empty($content->opening_times->monday		    ) ? $content->opening_times->monday		: ""),
+                    'open_Tuesday' =>(!empty($content->opening_times->tuesday	    ) ? $content->opening_times->tuesday	: ""),
+                    'open_Wednesday' =>(!empty($content->opening_times->wednesday	) ? $content->opening_times->wednesday	: ""),
+                    'open_Thursday' =>(!empty($content->opening_times->thursday	    ) ? $content->opening_times->thursday	: ""),
+                    'open_Friday' =>(!empty($content->opening_times->friday		    ) ? $content->opening_times->friday		: ""),
+                    'open_Saturday' =>(!empty($content->opening_times->saturday 	) ? $content->opening_times->saturday	: ""),
+                    'open_Sunday' =>(!empty($content->opening_times->sunday		    ) ? $content->opening_times->sunday		: ""),
+                    'closed_Monday' =>(!empty($content->closing_times->monday		) ? $content->closing_times->monday		: ""),
+                    'closed_Tuesday' =>(!empty($content->closing_times->tuesday	    ) ? $content->closing_times->tuesday	: ""),
+                    'closed_Wednesday' =>(!empty($content->closing_times->wednesday	) ? $content->closing_times->wednesday	: ""),
+                    'closed_Thursday' =>(!empty($content->closing_times->thursday	) ? $content->closing_times->thursday	: ""),
+                    'closed_Friday' =>(!empty($content->closing_times->friday		) ? $content->closing_times->friday		: ""),
+                    'closed_Saturday' =>(!empty($content->closing_times->saturday	) ? $content->closing_times->saturday	: ""),
+                    'closed_Sunday' =>(!empty($content->closing_times->sunday		) ? $content->closing_times->sunday		: "")
+                ]);
 				//Send responce
 				return response()->json(['success'=>'AddressAdded'], 200); 
 			}else{
@@ -170,8 +174,7 @@ class PodRecyclingLocationController extends Controller
 		//Decode incomming JSON
 		$content = json_decode($request->getContent());
 		//Authenticate user with password and email, can be user token if needs be but seems simpler for this test to use this set up for now
-		if(Auth::attempt(['email' => request('email'), 'password' => request('password')])){ 
-            $user = Auth::user(); 
+		if(Auth::attempt(['email' => request('email'), 'password' => request('password')])){
 			$finalTotal = 0;
 			$tempPodcount = 0;
 			
@@ -256,7 +259,10 @@ class PodRecyclingLocationController extends Controller
 			//Return requested information
 			return response()->json(['success'=> [ 'Count' =>  $fullCount, 'Total' => $fullTotal] ], 200); 
 		}
-	}
+        else{
+            return response()->json(['error'=>'Unauthorised'], 401);
+        }
+    }
 	
 	/** 
      * GetLastFiveReciepts api 
@@ -265,24 +271,27 @@ class PodRecyclingLocationController extends Controller
      */ 
     public function GetLastFiveReciepts(Request $request) 
     {
-		if(Auth::attempt(['email' => request('email'), 'password' => request('password')])){ 
-			$user = DB::select('select * from users where email = :email', ['email' => $request['userEmail']]);
-			$reciepts = DB::select('select * from receipts where userID = :userID limit 5', ['userID' => $user[0]->id]);
+		if(Auth::attempt(['email' => request('email'), 'password' => request('password')])){
+		    $user = User::where('email', $request['userEmail'])->first();
+			//$user = DB::select('select * from users where email = :email', ['email' => $request['userEmail']]);
+            $reciepts = Receipt::where('userID', $user->id)->limit(5)->get();
+			//$reciepts = DB::select('select * from receipts where userID = :userID limit 5', ['userID' => $user[0]->id]);
 			foreach($reciepts as $reciept){
 				$receiptItems = array();
 				$itemIDs = json_decode($reciept->itemIDs);
 				foreach($itemIDs as $itemID){
-					$items = DB::select('select * from receiptitems where id = :id', ['id' => $itemID]);
-					array_push($receiptItems, $items[0]);
+				    $items = ReceiptItem::find($itemID);
+					//$items = DB::select('select * from receiptitems where id = :id', ['id' => $itemID]);
+					array_push($receiptItems, $items);
 				}
 				$reciept->items = $receiptItems;
 			}
 			
 			$responce = array(
 								"user" => [
-											"id" => $user[0]->id, 
-											"name" => $user[0]->name, 
-											"email" => $user[0]->email
+											"id" => $user->id,
+											"name" => $user->name,
+											"email" => $user->email
 											],
 								"reciepts" => $reciepts
 							); 
@@ -300,37 +309,31 @@ class PodRecyclingLocationController extends Controller
 	private function AddReceiptToDatabase($reciept){
 		$ids = array();
 		//Add items first to get their IDs, then reciepts that contains ids for all the items
-		//Not ideal to be accessing the database directly like this when an object interface is better long term
-		//But it's a simple test done in a weekend. More time spent could make for a better system here. 
-		//Also, this might be more heav-duty than is strictly needed as I could just store JSON blobs but I figure
-		//it might be more usable by other immaginary departments. The marketing team might want a HUD of this data
-		//or the unicorns in accounting might need to know how much is being paid out to whom.
 		if (DB::connection()->getDatabaseName())
 		{
 			foreach($reciept['ItemList'] as $coffee => $item){
-				$id = DB::table('receiptitems')->insertGetId(
-					[ 
-						'coffeepodType' => $coffee,
-						'tier1Total' 	=> $item['tier1Total'],
-						'tier2Total' 	=> $item['tier2Total'],
-						'tier3Total' 	=> $item['tier3Total'],
-						'tier1Count' 	=> $item['tier1Count'],
-						'tier2Count' 	=> $item['tier2Count'],
-						'tier3Count' 	=> $item['tier3Count'],
-						'total'		 	=> $item['Total'],
-						'count'		 	=> $item['Count']
-					]
-				);
+                $recieptItem = new ReceiptItem;
+                $recieptItem->coffeepodType = $coffee;
+                $recieptItem->tier1Total = $item['tier1Total'];
+				$recieptItem->tier2Total = $item['tier2Total'];
+				$recieptItem->tier3Total = $item['tier3Total'];
+				$recieptItem->tier1Count = $item['tier1Count'];
+				$recieptItem->tier2Count = $item['tier2Count'];
+				$recieptItem->tier3Count = $item['tier3Count'];
+				$recieptItem->total = $item['Total'];
+				$recieptItem->count = $item['Count'];
+				$recieptItem->save();
+			    $id = $recieptItem->id;
 				array_push($ids, $id);
 			}
-			DB::table('receipts')->insert(
-				[ 
-					'userID' 	=> Auth::user()->id,
-					'itemIDs' 	=> json_encode($ids),
-					'total' 	=> $reciept['Total'],
-					'count' 	=> $reciept['Count']
-				]
-			);
+            $reciept = Receipt::create(
+                [
+                    'userID' 	=> Auth::user()->id,
+                    'itemIDs' 	=> json_encode($ids),
+                    'total' 	=> $reciept['Total'],
+                    'count' 	=> $reciept['Count']
+                ]
+            );
 		}
 	}
 	
@@ -459,10 +462,10 @@ class PodRecyclingLocationController extends Controller
 		// array of lat-long i.e  $point1 = [lat,long]
 		
 		$point1Lat = $point1[0];
-		$point2Lat =$point2[0];
+		$point2Lat = $point2[0];
 		$deltaLat = deg2rad($point2Lat - $point1Lat);
-		$point1Long =$point1[1];
-		$point2Long =$point2[1];
+		$point1Long = $point1[1];
+		$point2Long = $point2[1];
 		$deltaLong = deg2rad($point2Long - $point1Long);
 		$a = sin($deltaLat/2) * sin($deltaLat/2) + cos(deg2rad($point1Lat)) * cos(deg2rad($point2Lat)) * sin($deltaLong/2) * sin($deltaLong/2);
 		$c = 2 * atan2(sqrt($a), sqrt(1-$a));

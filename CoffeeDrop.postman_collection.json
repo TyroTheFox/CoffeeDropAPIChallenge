@@ -167,6 +167,54 @@
 				}
 			},
 			"response": []
+		},
+		{
+			"name": "RegisterStaffUser",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": ""
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "RegisterStaffUser",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "http://127.0.0.1:8000/api/register?name=bob&email=bob@bob.com&password=bob123",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"register"
+					],
+					"query": [
+						{
+							"key": "name",
+							"value": "bob"
+						},
+						{
+							"key": "email",
+							"value": "bob@bob.com"
+						},
+						{
+							"key": "password",
+							"value": "bob123"
+						}
+					]
+				}
+			},
+			"response": []
 		}
 	]
 }
